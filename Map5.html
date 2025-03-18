@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Perth Amboy Alliance For Community Neighborhood Checker</title>
+    <style>
+        /* Basic styling for the page */
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #map {
+            height: 400px;
+            /* Adjust height as needed */
+            width: 100%;
+            /* Make the map fill its container */
+        }
+
+        #addressInput {
+            width: 300px;
+            /* Adjust input width as needed */
+            padding: 8px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+
+        #result {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body style="background-color: lightgray;">
+    <h1>Perth Amboy Alliance For Community Neighborhood Checker</h1>
+    <input type="text" id="addressInput" placeholder="Enter address in Perth Amboy">
+    <button onclick="checkAddress()">Check Address</button>
+    <p id="result"></p>
+    <div id="map"></div>
+
+    <script>
+        // Replace with your actual API key
+        const apiKey = 'YOUR_API_KEY';
+
+        let map;
+        let neighborhoodPolygon;
+        let geocoder;
+
+        function initMap() {
+            // Initialize the map
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: {
+                    lat: 40.5204,
+                    lng: -74.2755
+                }, // Center on Perth Amboy
+                zoom: 14 // Adjust zoom level as needed
+            });
+
+            // Initialize the geocoder
+            geocoder = new google.maps.Geocoder();
+
+            // New GeoJSON data for the expanded neighborhood
+            const geoJsonData = {
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [-74.27591156909727, 40.51624528663273],
+                                [-74.27437530036416, 40.51582990133231],
+                                [-74.27199761755465, 40.5151409146197],
+                                [-74.27106353808558, 40.51489329444036],
+                                [-74.27058006499864, 40.51608345192788],
+                                [-74.26956913063515, 40.51857360224197],
+                                [-74.26832008382709, 40.5216427654921],
+                                [-74.26730336826132, 40.52437428876818],
+                                [-74.26707632491542, 40.52523182952362],
+                                [-74.26689899141489, 40.52600375304628],
+                                [-74.26682831460991, 40.52698445834117],
+                                [-74.26687611636946, 40.52864263732063],
+                                [-74.2670745507157, 40.5303237511136],
+                                [-74.26756878568966, 40.53265476902566],
+                                [-74.26807842315212, 40.53284498853792],
+                                [-74.26860694082653, 40.53286294275651],
+                                [-74.2701216936378, 40.53293473322782],
+                                [-74.27130140165096, 40.53300290567881],
+                                [-74.27195732106927, 40.5330387873019],
+                                [-74.2723820191453, 40.53307824516828],
+                                [-74.27283448638867, 40.53210343379993],
+                                [-74.27326387649447, 40.53126369956839],
+                                [-74.27396631283574, 40.53024271341834],
+                                [-74.27448063253303, 40.52954653174195],
+                                [-74.27492386713588, 40.52892719740784],
+                                [-74.27507011012995, 40.52866508273223],
+                                [-74.27542866642216, 40.5279730923134],
+                                [-74.27557494464443, 40.52742388519775],
+                                [-74.27539128952652, 40.52619409578088],
+                                [-74.27546201910802, 40.52585429113011],
+                                [-74.27578392623327, 40.52446626000881],
+                                [-74.27612326091828, 40.52302752024715],
+                                [-74.27636370277433, 40.5226528090775],
+                                [-74.27655712637657, 40.5217126087523],
+                                [-74.276552435105, 40.5213373573892],
+                                [-74.27610917483017, 40.52017255514519],
+                                [-74.27608086541045, 40.52005413361979],
+                                [-74.27601488579471, 40.51999008805389],
+                                [-74.27602903323498, 40.51960970280876],
+                                [-74.2760055859472, 40.51885157022316],
+                                [-74.27595839457167, 40.51804773765448],
+                                [-74.27595876525565, 40.51727833635045],
+                                [-74.27593044659551, 40.51649244640101],
+                                [-74.27591156909727, 40.51624528663273]
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "name": "PAAC Mapped",
+                        "styleUrl": "#__managed_style_6E2DE471D236DF360033",
+                        "fill-opacity": 0.5019607843137255,
+                        "fill": "#42a5f5",
+                        "stroke-opacity": 1,
+                        "stroke": "#1976d2",
+                        "stroke-width": 4,
+                        "icon-offset": [64, 128],
+                        "icon-offset-units": ["pixels", "insetPixels"],
+                        "icon": "https://earth.google.com/earth/document/icon?color=1976d2&id=2000&scale=4"
+                    },
+                    "id": "53BCE55B7C000003"
+                }]
+            };
+
+            // Extract coordinates and create the polygon
+            const neighborhoodCoords = geoJsonData.features[0].geometry.coordinates[0].map(coord => ({
+                lat: coord[1],
+                lng: coord[0]
+            }));
+
+            // Create the polygon on the map
+            neighborhoodPolygon = new google.maps.Polygon({
+                paths: neighborhoodCoords,
+                strokeColor: '#00FF00',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#00FF00',
+                fillOpacity: 0.35,
+            });
+
+            neighborhoodPolygon.setMap(map);
+        }
+
+        // Function to check if an address is within the neighborhood
+        function checkAddress() {
+            const address = document.getElementById('addressInput').value;
+            geocoder.geocode({
+                address: address,
+                componentRestrictions: {
+                    locality: 'Perth Amboy'
+                }
+            }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    const location = results[0].geometry.location;
+                    const latLng = {
+                        lat: location.lat(),
+                        lng: location.lng()
+                    };
+
+                    // Check if the location is within the polygon
+                    if (google.maps.geometry.poly.containsLocation(latLng, neighborhoodPolygon)) {
+                        document.getElementById('result').textContent = 'The address is within the neighborhood.';
+                    } else {
+                        document.getElementById('result').textContent = 'The address is outside the neighborhood.';
+                    }
+
+                    // Add a marker to the map
+                    new google.maps.Marker({
+                        position: location,
+                        map: map
+                    });
+                    map.setCenter(location); // Center the map on the searched address
+                } else {
+                    document.getElementById('result').textContent = 'Address not found.';
+                }
+            });
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA220eKGX6kPN7opoXSU7zYX7NT9h3pAxc&libraries=geometry&callback=initMap" async
+        defer></script>
+</body>
+
+</html>
